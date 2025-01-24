@@ -7,6 +7,7 @@ pub const WALL_COUNT_2_PLAYERS: usize = 10;
 pub const WALL_COUNT_4_PLAYERS: usize = 5;
 
 /// Player pawn color
+#[derive(Hash, PartialEq, Eq)]
 pub enum Color {
     Red,
     Blue,

@@ -59,6 +59,8 @@ pub struct Board {
     spaces: HashMap<Point, BoardNode>,
     // Walls are stored as points that are current occupied by a wall.
     wall_spaces: HashSet<Point>,
+    // Look-up table of all player pieces
+    player_tbl: HashMap<Color, Point>,
 }
 
 impl Board {
@@ -68,6 +70,7 @@ impl Board {
         let mut board = Board {
             spaces: HashMap::new(),
             wall_spaces: HashSet::new(),
+            player_tbl: HashMap::new(),
         };
         for r in 0..BOARD_SIZE {
             for c in 0..BOARD_SIZE {
@@ -77,14 +80,54 @@ impl Board {
 
         // Place player colors
         // TODO 4 player?
-        if let Some(bn) = board.spaces.get_mut(&Point(0, 2)) {
+        let player_start_top = Point(0, 2);
+        let player_start_bottom = Point(4, 2);
+
+        if let Some(bn) = board.spaces.get_mut(&player_start_top) {
             (*bn).contents = Some(Color::Red);
         }
-        if let Some(bn) = board.spaces.get_mut(&Point(4, 2)) {
+        board.player_tbl.insert(Color::Red, player_start_top);
+        if let Some(bn) = board.spaces.get_mut(&player_start_bottom) {
             (*bn).contents = Some(Color::Blue);
         }
+        board.player_tbl.insert(Color::Blue, player_start_bottom);
 
         board
+    }
+
+    /// Given a pawn, returns the list of possible directions the pawn may move.
+    pub fn available_pawn_directions(self, color: Color) -> Vec<Direction> {
+        let player_pt = match self.player_tbl.get(&color) {
+            Some(p) => p,
+            None => return Vec::new(),
+        };
+        let neighbors = match self.spaces.get(&player_pt) {
+            Some(bn) => &bn.neighbors,
+            None => return Vec::new(),
+        };
+
+        let mut directions = Vec::<Direction>::new();
+        // There are at most 5 directions a pawn can move (when diagonals come
+        // into play there is a case in which two directions replace one).
+        directions.reserve(5);
+
+        // Note that subtraction on an unsigned 0 should be safe as we checked
+        // the bounds on neighbor initialization. Large array indices will not
+        // be found in a 5x5 playing board.
+        if neighbors.contains(&Point(player_pt.0 - 1, player_pt.1)) {
+            directions.push(Direction::N);
+        }
+        if neighbors.contains(&Point(player_pt.0, player_pt.1 + 1)) {
+            directions.push(Direction::E);
+        }
+        if neighbors.contains(&Point(player_pt.0 + 1, player_pt.1)) {
+            directions.push(Direction::S);
+        }
+        if neighbors.contains(&Point(player_pt.0, player_pt.1 - 1)) {
+            directions.push(Direction::W);
+        }
+
+        directions
     }
 
     /// Moves a pawn in a specified direction
