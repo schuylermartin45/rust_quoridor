@@ -8,11 +8,18 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 /// Board
-const BOARD_SIZE: usize = 5;
+const BOARD_SIZE: isize = 5;
 
 /// A coordinate position in the game board (row,column)
 #[derive(Hash, PartialEq, Eq)]
-struct Point(usize, usize);
+struct Point(isize, isize);
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.0, self.1);
+        Ok(())
+    }
+}
 
 /// A wall is just two pairs of coordinates. Uses the same row/column coordinate
 /// system as the rest of the board (row/column refers to the upper and left
@@ -29,24 +36,24 @@ struct BoardNode {
 impl BoardNode {
     /// Constructs a BoardNode instance, automatically calculating initial
     /// neighbor positions
-    pub fn new(row: usize, col: usize, contents: Option<Color>) -> Self {
+    pub fn new(row: isize, col: isize, contents: Option<Color>) -> Self {
         let mut bn = BoardNode {
             contents: contents,
             neighbors: HashSet::new(),
         };
 
         let upper_bound = BOARD_SIZE - 1;
-        if row < upper_bound && col < upper_bound {
-            bn.neighbors.insert(Point(row + 1, col + 1));
+        if row < upper_bound {
+            bn.neighbors.insert(Point(row + 1, col));
         }
-        if row < upper_bound && col > 0 {
-            bn.neighbors.insert(Point(row + 1, col - 1));
+        if row > 0 {
+            bn.neighbors.insert(Point(row - 1, col));
         }
-        if row > 0 && col < upper_bound {
-            bn.neighbors.insert(Point(row - 1, col + 1));
+        if col < upper_bound {
+            bn.neighbors.insert(Point(row, col + 1));
         }
-        if row > 0 && col > 0 {
-            bn.neighbors.insert(Point(row - 1, col - 1));
+        if col > 0 {
+            bn.neighbors.insert(Point(row, col - 1));
         }
 
         bn
@@ -61,6 +68,10 @@ pub struct Board {
     wall_spaces: HashSet<Point>,
     // Look-up table of all player pieces
     player_tbl: HashMap<Color, Point>,
+    // Road-robin player tracker
+    player_order: Vec<Color>,
+    // Ever-incrementing turn counter determines the current player
+    turn_cntr: usize,
 }
 
 impl Board {
@@ -71,6 +82,10 @@ impl Board {
             spaces: HashMap::new(),
             wall_spaces: HashSet::new(),
             player_tbl: HashMap::new(),
+            // TODO 4 player?
+            player_order: vec![Color::Blue, Color::Red],
+            // TODO alternate starting player between games
+            turn_cntr: 0,
         };
         for r in 0..BOARD_SIZE {
             for c in 0..BOARD_SIZE {
@@ -95,46 +110,83 @@ impl Board {
         board
     }
 
+    /// Calculates the current player for which an operation should apply to.
+    /// TODO: use Player struct, not color
+    fn get_cur_player(&self) -> Color {
+        self.player_order[self.turn_cntr % self.player_order.len()]
+    }
+
+    /// Indicates to the game state control that the next turn is taking place
+    /// so the correct player is manipulated.
+    fn next_turn(&mut self) {
+        self.turn_cntr += 1;
+    }
+
     /// Given a pawn, returns the list of possible directions the pawn may move.
-    pub fn available_pawn_directions(self, color: Color) -> Vec<Direction> {
-        let player_pt = match self.player_tbl.get(&color) {
-            Some(p) => p,
-            None => return Vec::new(),
-        };
+    pub fn get_available_pawn_directions(&self) -> HashSet<Direction> {
+        let color = self.get_cur_player();
+        let player_pt = self.player_tbl.get(&color).unwrap();
         let neighbors = match self.spaces.get(&player_pt) {
             Some(bn) => &bn.neighbors,
-            None => return Vec::new(),
+            None => panic!("Unable to fetch neighbors for {}", player_pt),
         };
 
-        let mut directions = Vec::<Direction>::new();
+        let mut directions = HashSet::<Direction>::new();
         // There are at most 5 directions a pawn can move (when diagonals come
         // into play there is a case in which two directions replace one).
         directions.reserve(5);
 
-        // Note that subtraction on an unsigned 0 should be safe as we checked
-        // the bounds on neighbor initialization. Large array indices will not
-        // be found in a 5x5 playing board.
         if neighbors.contains(&Point(player_pt.0 - 1, player_pt.1)) {
-            directions.push(Direction::N);
+            directions.insert(Direction::N);
         }
         if neighbors.contains(&Point(player_pt.0, player_pt.1 + 1)) {
-            directions.push(Direction::E);
+            directions.insert(Direction::E);
         }
         if neighbors.contains(&Point(player_pt.0 + 1, player_pt.1)) {
-            directions.push(Direction::S);
+            directions.insert(Direction::S);
         }
         if neighbors.contains(&Point(player_pt.0, player_pt.1 - 1)) {
-            directions.push(Direction::W);
+            directions.insert(Direction::W);
         }
+        // TODO handle pawn jumping
+        // TODO handle diagonal edge cases caused by wall/pawn blocking.
+        // TODO consider panicking if no moves are available. This should never
+        // happen if the game is played correctly.
 
         directions
     }
 
     /// Moves a pawn in a specified direction
-    pub fn move_pawn(&mut self, color: Color, direction: Direction) {}
+    pub fn move_pawn(&mut self, direction: Direction) {
+        let color = self.get_cur_player();
+        let mut player_pt = self.player_tbl.get_mut(&color).unwrap();
+
+        let new_pt = match direction {
+            Direction::N => Point(player_pt.0 - 1, player_pt.1),
+            Direction::E => Point(player_pt.0, player_pt.1 + 1),
+            Direction::S => Point(player_pt.0 + 1, player_pt.1),
+            Direction::W => Point(player_pt.0, player_pt.1 - 1),
+            Direction::NE => Point(player_pt.0 - 1, player_pt.1 + 1),
+            Direction::SE => Point(player_pt.0 + 1, player_pt.1 + 1),
+            Direction::SW => Point(player_pt.0 + 1, player_pt.1 - 1),
+            Direction::NW => Point(player_pt.0 - 1, player_pt.1 - 1),
+        };
+
+        if let Some(mut old_board_node) = self.spaces.get_mut(&player_pt) {
+            old_board_node.contents = None;
+        }
+        if let Some(mut new_board_node) = self.spaces.get_mut(&new_pt) {
+            new_board_node.contents = Some(color);
+        }
+
+        *player_pt = new_pt;
+
+        // This is all a player can do this turn
+        self.next_turn();
+    }
 
     /// Indicates if a provided wall position is valid
-    pub fn can_place_wall(self, wall: Wall) -> bool {
+    pub fn can_place_wall(&self, wall: Wall) -> bool {
         // TODO complete
         // Check all wall positions, if at least one coordinate matches, a
         // wall already exists in that position.
@@ -145,6 +197,9 @@ impl Board {
     pub fn place_wall(&mut self, player: &mut Player, wall: Wall) {
         // TODO complete
         // TODO remove neighbors from affected graph nodes.
+
+        // This is all a player can do this turn
+        self.next_turn();
     }
 }
 
@@ -185,7 +240,7 @@ impl fmt::Display for Board {
                 write!(f, "  [{}]", pos_ch).expect("I/O Error");
             }
             if r == 0 {
-                write!(f, "  Player Turn: TODO").expect("I/O Error");
+                write!(f, "  Player Turn: {}", self.get_cur_player()).expect("I/O Error");
             }
             writeln!(f, "").expect("I/O Error");
             if r == 0 {
