@@ -228,10 +228,10 @@ impl fmt::Display for Board {
                 // Determine player character to render on the board
                 let pos_ch = match self.spaces.get(&Point(r, c)) {
                     Some(bn) => match bn.contents {
-                        Some(Color::Red) => "R",
-                        Some(Color::Blue) => "B",
-                        Some(Color::Green) => "G",
-                        Some(Color::Yellow) => "Y",
+                        Some(Color::Red) => "\x1b[91mR\x1b[0m",
+                        Some(Color::Blue) => "\x1b[94mB\x1b[0m",
+                        Some(Color::Green) => "\x1b[92mG\x1b[0m",
+                        Some(Color::Yellow) => "\x1b[93mY\x1b[0m",
                         None => "_",
                     },
                     None => "_",

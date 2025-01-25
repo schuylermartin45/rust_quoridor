@@ -24,10 +24,10 @@ impl fmt::Display for Color {
             f,
             "{}",
             match self {
-                Color::Red => "Red",
-                Color::Blue => "Blue",
-                Color::Green => "Green",
-                Color::Yellow => "Yellow",
+                Color::Red => "\x1b[91mRed\x1b[0m",
+                Color::Blue => "\x1b[94mBlue\x1b[0m",
+                Color::Green => "\x1b[92mGreen\x1b[0m",
+                Color::Yellow => "\x1b[93mYellow\x1b[0m",
             }
         );
 
