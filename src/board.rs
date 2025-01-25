@@ -111,7 +111,6 @@ impl Board {
     }
 
     /// Calculates the current player for which an operation should apply to.
-    /// TODO: use Player struct, not color
     fn get_cur_player(&self) -> &Player {
         &self.player_order[self.turn_cntr % self.player_order.len()]
     }
