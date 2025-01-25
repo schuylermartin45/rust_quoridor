@@ -10,7 +10,7 @@ pub const WALL_COUNT_2_PLAYERS: isize = 10;
 pub const WALL_COUNT_4_PLAYERS: isize = 5;
 
 /// Player pawn color
-#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Color {
     Red,
     Blue,
@@ -97,7 +97,33 @@ impl Player {
     }
 }
 
-/// Unit tests for Player functions
+/**** Unit tests for Player functions ****/
+
+/// Check that when a wall is used, the wall count state is managed correctly.
+#[rstest]
+#[case(Player::new(Color::Red), Color::Red)]
+#[case(Player::new(Color::Blue), Color::Blue)]
+#[case(Player::new(Color::Green), Color::Green)]
+#[case(Player::new(Color::Yellow), Color::Yellow)]
+fn validate_get_id(#[case] player: Player, #[case] expected: Color) {
+    assert_eq!(player.get_id(), expected)
+}
+
+/// Check that when a player wins, the win counter state is managed correctly.
+#[rstest]
+#[case(Player::new(Color::Blue), 0)]
+#[case(Player::new(Color::Blue), 6)]
+#[case(Player::new(Color::Blue), 5)]
+#[case(Player::new(Color::Blue), 42)]
+#[case(Player::new(Color::Blue), 343)]
+fn validate_win_tracking(#[case] mut player: Player, #[case] expected: usize) {
+    for _ in 0..expected {
+        player.player_won();
+    }
+    assert_eq!(player.get_win_count(), expected)
+}
+
+/// Check that when a wall is used, the wall count state is managed correctly.
 #[rstest]
 #[case(Player::new(Color::Blue), 0, 10)]
 #[case(Player::new(Color::Blue), 6, 4)]
