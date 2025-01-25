@@ -3,6 +3,7 @@
 //! Description:    Player representation
 //!
 
+use rstest::rstest;
 use std::fmt;
 
 pub const WALL_COUNT_2_PLAYERS: isize = 10;
@@ -94,4 +95,22 @@ impl Player {
         }
         self.wall_cntr -= 1;
     }
+}
+
+/// Unit tests for Player functions
+#[rstest]
+#[case(Player::new(Color::Blue), 0, 10)]
+#[case(Player::new(Color::Blue), 6, 4)]
+#[case(Player::new(Color::Blue), 5, 5)]
+#[case(Player::new(Color::Blue), 10, 0)]
+#[case(Player::new(Color::Blue), 11, 0)]
+fn validate_wall_usage(
+    #[case] mut player: Player,
+    #[case] walls_used: isize,
+    #[case] expected: isize,
+) {
+    for _ in 0..walls_used {
+        player.use_wall();
+    }
+    assert_eq!(player.get_wall_count(), expected)
 }
