@@ -5,8 +5,8 @@
 
 use std::fmt;
 
-pub const WALL_COUNT_2_PLAYERS: usize = 10;
-pub const WALL_COUNT_4_PLAYERS: usize = 5;
+pub const WALL_COUNT_2_PLAYERS: isize = 10;
+pub const WALL_COUNT_4_PLAYERS: isize = 5;
 
 /// Player pawn color
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
@@ -52,7 +52,7 @@ pub enum Direction {
 pub struct Player {
     id: Color,
     wins: usize,
-    wall_cntr: usize,
+    wall_cntr: isize,
 }
 
 impl Player {
@@ -69,5 +69,29 @@ impl Player {
     /// Retrieve the player's identifying color
     pub fn get_id(&self) -> Color {
         self.id
+    }
+
+    /// Retrieve the number of times a player has won
+    pub fn get_win_count(&self) -> usize {
+        self.wins
+    }
+
+    /// Tracks a player's win
+    pub fn player_won(&mut self) {
+        self.wins += 1;
+    }
+
+    /// Retrieve the number of walls a player has left at their disposal
+    pub fn get_wall_count(self) -> isize {
+        self.wall_cntr
+    }
+
+    /// Tracks wall usage
+    pub fn use_wall(&mut self) {
+        // Forbid a negative wall count
+        if self.wall_cntr == 0 {
+            return;
+        }
+        self.wall_cntr -= 1;
     }
 }
