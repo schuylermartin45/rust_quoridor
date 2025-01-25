@@ -83,7 +83,7 @@ impl Player {
     }
 
     /// Retrieve the number of walls a player has left at their disposal
-    pub fn get_wall_count(self) -> isize {
+    pub fn get_wall_count(&self) -> isize {
         self.wall_cntr
     }
 

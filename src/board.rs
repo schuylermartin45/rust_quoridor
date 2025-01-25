@@ -221,6 +221,7 @@ Board Display Diagram
 */
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let player = self.get_cur_player();
         for r in 0..BOARD_SIZE {
             for c in 0..BOARD_SIZE {
                 // TODO print walls
@@ -239,11 +240,17 @@ impl fmt::Display for Board {
                 write!(f, "  [{}]", pos_ch).expect("I/O Error");
             }
             if r == 0 {
-                write!(f, "  Player Turn: {}", self.get_cur_player().get_id()).expect("I/O Error");
+                write!(f, "  Player Turn: {}", player.get_id()).expect("I/O Error");
             }
             writeln!(f, "").expect("I/O Error");
             if r == 0 {
-                write!(f, "{:>43} {:02}", "Walls remaining:", 0).expect("I/O Error");
+                write!(
+                    f,
+                    "{:>43} {:02}",
+                    "Walls remaining:",
+                    player.get_wall_count()
+                )
+                .expect("I/O Error");
             }
             writeln!(f, "").expect("I/O Error");
         }
