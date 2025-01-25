@@ -69,7 +69,7 @@ pub struct Board {
     // Look-up table of all player pieces
     player_tbl: HashMap<Color, Point>,
     // Road-robin player tracker
-    player_order: Vec<Color>,
+    player_order: Vec<Player>,
     // Ever-incrementing turn counter determines the current player
     turn_cntr: usize,
 }
@@ -83,7 +83,7 @@ impl Board {
             wall_spaces: HashSet::new(),
             player_tbl: HashMap::new(),
             // TODO 4 player?
-            player_order: vec![Color::Blue, Color::Red],
+            player_order: vec![Player::new(Color::Blue), Player::new(Color::Red)],
             // TODO alternate starting player between games
             turn_cntr: 0,
         };
@@ -112,8 +112,8 @@ impl Board {
 
     /// Calculates the current player for which an operation should apply to.
     /// TODO: use Player struct, not color
-    fn get_cur_player(&self) -> Color {
-        self.player_order[self.turn_cntr % self.player_order.len()]
+    fn get_cur_player(&self) -> &Player {
+        &self.player_order[self.turn_cntr % self.player_order.len()]
     }
 
     /// Indicates to the game state control that the next turn is taking place
@@ -124,7 +124,7 @@ impl Board {
 
     /// Given a pawn, returns the list of possible directions the pawn may move.
     pub fn get_available_pawn_directions(&self) -> HashSet<Direction> {
-        let color = self.get_cur_player();
+        let color = self.get_cur_player().get_id();
         let player_pt = self.player_tbl.get(&color).unwrap();
         let neighbors = match self.spaces.get(&player_pt) {
             Some(bn) => &bn.neighbors,
@@ -158,7 +158,7 @@ impl Board {
 
     /// Moves a pawn in a specified direction
     pub fn move_pawn(&mut self, direction: Direction) {
-        let color = self.get_cur_player();
+        let color = self.get_cur_player().get_id();
         let mut player_pt = self.player_tbl.get_mut(&color).unwrap();
 
         let new_pt = match direction {
@@ -240,7 +240,7 @@ impl fmt::Display for Board {
                 write!(f, "  [{}]", pos_ch).expect("I/O Error");
             }
             if r == 0 {
-                write!(f, "  Player Turn: {}", self.get_cur_player()).expect("I/O Error");
+                write!(f, "  Player Turn: {}", self.get_cur_player().get_id()).expect("I/O Error");
             }
             writeln!(f, "").expect("I/O Error");
             if r == 0 {

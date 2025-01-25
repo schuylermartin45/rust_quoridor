@@ -65,4 +65,9 @@ impl Player {
         };
         player
     }
+
+    /// Retrieve the player's identifying color
+    pub fn get_id(&self) -> Color {
+        self.id
+    }
 }
