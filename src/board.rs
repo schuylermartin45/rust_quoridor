@@ -184,12 +184,23 @@ impl Board {
         self.next_turn();
     }
 
+    /// Helper function that determines if a single wall-point is out-of-bounds.
+    fn is_invalid_wall_pt(wall_pt: &Point) -> bool {
+        wall_pt.0 < 1 || wall_pt.0 > 4 || wall_pt.1 < 1 || wall_pt.1 > 4
+    }
+
     /// Indicates if a provided wall position is valid
     pub fn can_place_wall(&self, wall: Wall) -> bool {
-        // TODO complete
-        // Check all wall positions, if at least one coordinate matches, a
-        // wall already exists in that position.
-        false
+        // Verify the wall position is legal. Note that walls use a coordinate
+        // system on the leading top-left edge of a board piece that excludes
+        // the outer rim.
+        if Self::is_invalid_wall_pt(&wall.0) || Self::is_invalid_wall_pt(&wall.1) {
+            return false;
+        }
+
+        // Check all wall positions, if at least one coordinate matches the set
+        // of existing wall points, a wall can't be placed.
+        !(self.wall_spaces.contains(&wall.0) || self.wall_spaces.contains(&wall.1))
     }
 
     /// Places a wall in a specific location
